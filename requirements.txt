@@ -1,4 +1,7 @@
-pandas
-numpy
-scikit-learn
-beautifulsoup4
+streamlit==1.37.1
+scikit-learn==1.5.1
+pandas==2.2.2
+matplotlib==3.9.2
+numpy==1.26.4
+beautifulsoup4==4.12.3
+requests==2.32.3
