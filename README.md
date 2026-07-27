@@ -2,7 +2,7 @@
 
 This quantitative analytics framework tracks and monitors structural narrative changes across sequential Federal Reserve FOMC policy minutes. Designed for institutional macro analysts, quantitative researchers, multi-asset portfolio managers, and traders, the engine filters out routine administrative language to isolate unexpected deviations in central bank forward guidance.
 
-[📁 View Full Analytical Whitepaper (PDF)](https://github.com)
+[📁 View Full Analytical Whitepaper (PDF)](https://github.com/honsengchoi1/monetary-policy-nlp-engine/blob/main/reports/fomc_unsupervised_language_analytics.pdf)
 
 ## 📊 Empirical Framework & Statistical Baseline
 *   **The Benchmark Baseline**: By analyzing historical minutes, the model establishes that the Federal Reserve naturally modifies approximately **52.10%** of its text from meeting to meeting to account for standard data updates.
