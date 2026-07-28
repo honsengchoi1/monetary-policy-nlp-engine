@@ -6,17 +6,23 @@ Created: 2026-07-26 | Author: hsc
 import os
 import json
 import numpy as np
-from datetime import date, timedelta, datetime
+from datetime import datetime, timezone, timedelta
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction import text
 
 def load_local_envelope():
     """
-    Safely accesses and parses the JSON ledger workspace envelope.
+    Safely accesses and parses the JSON ledger workspace envelope from the /data folder.
     """
-    script_directory = os.path.dirname(os.path.abspath(__file__))
-    input_filename = os.path.join(script_directory, "fomc_cleaned_data.json")
+    # 1. Finds the directory of this script (resolves to production_github_repo\src)
+    script_directory = os.path.dirname(os.path.abspath(__file__)) 
+    
+    # 2. Moves up one level to the root directory (resolves to production_github_repo)
+    repository_root = os.path.dirname(script_directory) 
+    
+    # 3. Joins the root path with the new folder and file name
+    input_filename = os.path.join(repository_root, "data", "fomc_cleaned_data.json")
     
     if not os.path.exists(input_filename):
         return {"documents": [], "fomc_schedule_upcoming": []}
@@ -30,19 +36,24 @@ def load_local_envelope():
         except json.JSONDecodeError:
             return {"documents": [], "fomc_schedule_upcoming": []}
 
+
 def get_countdown_metrics():
     """
-    Computes countdown metrics dynamically using dates scraped directly 
-    by the ingestion pipeline, removing hardcoded schedules.
+    Computes countdown metrics dynamically against the verified JSON database schedule.
+    Automatically scales fallback logic forward to eliminate hardcoded expiration dates.
     """
     envelope = load_local_envelope()
     upcoming_schedule = envelope.get("fomc_schedule_upcoming", [])
     
-    today = date.today()
+    # 1. Enforce strict UTC synchronization for today's operational datetime
+    now_utc = datetime.now(timezone.utc)
+    today_utc = now_utc.date()
     
-    # Fallback default constants in case the scraper has not populated the JSON ledger yet
-    target_release_str = "Aug 19, 2026"
-    days_remaining = 25
+    # 2. EXPIRATION-PROOF FALLBACK: Calculate a target exactly 3 weeks from today
+    # This prevents the dashboard from ever displaying negative numbers or crashing.
+    dynamic_fallback_date = today_utc + timedelta(days=21)
+    days_remaining = 21
+    target_release_str = dynamic_fallback_date.strftime("%b %d, %Y")
     
     if not upcoming_schedule:
         return target_release_str, days_remaining
@@ -50,16 +61,19 @@ def get_countdown_metrics():
     for date_str in upcoming_schedule:
         try:
             meeting_date = datetime.strptime(date_str, "%Y%m%d").date()
-            if meeting_date >= today:
-                # The Fed releases historical text minutes exactly 21 days (3 weeks) post-meeting
+            
+            # Compare using our locked global UTC day boundary
+            if meeting_date >= today_utc:
+                # The Fed releases historical text minutes exactly 21 days post-meeting
                 release_date = meeting_date + timedelta(days=21)
-                days_remaining = (release_date - today).days
+                days_remaining = (release_date - today_utc).days
                 target_release_str = release_date.strftime("%b %d, %Y")
                 break
         except ValueError:
             continue
             
     return target_release_str, days_remaining
+
 
 def run_vocabulary_analysis(max_df_param=0.85, word_length=3, threshold_param=52.10):
     envelope = load_local_envelope()

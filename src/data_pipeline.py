@@ -12,12 +12,18 @@ import time
 from datetime import datetime, timezone
 
 def run_incremental_pipeline():
-    calendar_url = "https://federalreserve.gov"
-    base_url = "https://federalreserve.gov"
-    
+    calendar_url = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    base_url = "https://www.federalreserve.gov"
+
+    # 1. Resolves to the 'src' subfolder
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_filename = os.path.join(script_dir, "fomc_cleaned_data.json")
-    audit_filename = os.path.join(script_dir, "pipeline_audit_log.json")
+    
+    # 2. Steps one level up to the 'production_github_repo' root directory
+    repository_root = os.path.dirname(script_dir)
+    
+    # 3. Targets the new professional folder structures precisely
+    output_filename = os.path.join(repository_root, "data", "fomc_cleaned_data.json")
+    audit_filename = os.path.join(repository_root, "data", "pipeline_audit_log.json")
     
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -66,7 +72,8 @@ def run_incremental_pipeline():
     upcoming_dates = []
     current_year = datetime.now(timezone.utc).year
     
-    for panel in soup.find_all('div', class_='panel'):
+
+    for panel in soup.find_all('div', class_=lambda x: x and 'panel' in x):
         year_header = panel.find('h4')
         if year_header and str(current_year) in year_header.get_text():
             for row in panel.find_all('div', class_='fomc-meeting'):
