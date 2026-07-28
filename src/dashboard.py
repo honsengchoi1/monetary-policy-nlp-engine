@@ -13,27 +13,77 @@ st.set_page_config(
     page_title="Macroeconomic Regime Tracker",
     page_icon="📑",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"  # FIXES MOBILE OVERLAP: Auto-collapses sidebar on iPhones
 )
 
 # --- 2. INJECT CSS STYLING SPECIFICATIONS ---
 st.markdown("""
-    <style>
-        .block-container { padding-top: 2rem !important; padding-bottom: 2rem !important; }
-        [data-testid="stSidebarUserContent"] { padding-top: 2rem !important; }
-        .stMarkdown h3, .stMarkdown p { margin-bottom: 0px !important; padding-bottom: 4px !important; }
-        hr { margin-top: 12px !important; margin-bottom: 18px !important; }
-        [data-testid="stVerticalBlock"] { gap: 0.6rem !important; }
-    </style>
+<style>
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+    [data-testid="stSidebarUserContent"] {
+        padding-top: 1.5rem !important; /* Pushes content slightly higher */
+    }
+    .stMarkdown h3, .stMarkdown p {
+        margin-bottom: 0px !important;
+        padding-bottom: 4px !important;
+    }
+    hr {
+        margin-top: 10px !important;
+        margin-bottom: 14px !important;
+    }
+    /* Drastically tightens spacing between slider components to make room */
+    [data-testid="stVerticalBlock"] {
+        gap: 0.4rem !important; 
+    }
+</style>
 """, unsafe_allow_html=True)
 
 # --- 3. SIDEBAR PARAMETER INTERFACE ---
 st.sidebar.header("⚙️ Model Controls")
 st.sidebar.markdown("Adjust interactive weights for the underlying NLP core math pipeline.")
 
-max_df_slider = st.sidebar.slider("Max Document Frequency (max_df)", min_value=0.50, max_value=1.00, value=0.85, step=0.05)
-min_word_len = st.sidebar.slider("Minimum Word Character Length", min_value=2, max_value=6, value=3, step=1)
-anomaly_threshold = st.sidebar.slider("Regime Shift Anomaly Threshold (%)", min_value=10.0, max_value=90.0, value=52.10, step=0.50)
+# 1. Initialize stable session state parameters if they don't exist yet
+if "max_df_val" not in st.session_state:
+    st.session_state["max_df_val"] = 0.85
+if "min_len_val" not in st.session_state:
+    st.session_state["min_len_val"] = 3
+if "anomaly_th_val" not in st.session_state:
+    st.session_state["anomaly_th_val"] = 52.10
+
+# 2. Bind sliders to use session state values for their positions
+max_df_slider = st.sidebar.slider(
+    "Max Document Frequency (max_df)", 
+    min_value=0.50, max_value=1.00, 
+    value=st.session_state["max_df_val"], 
+    step=0.05
+)
+min_word_len = st.sidebar.slider(
+    "Minimum Word Character Length", 
+    min_value=2, max_value=6, 
+    value=st.session_state["min_len_val"], 
+    step=1
+)
+anomaly_threshold = st.sidebar.slider(
+    "Regime Shift Anomaly Threshold (%)", 
+    min_value=10.0, max_value=90.0, 
+    value=st.session_state["anomaly_th_val"], 
+    step=0.50
+)
+
+# 3. Cache current user adjustments so changes don't get lost on page refresh
+st.session_state["max_df_val"] = max_df_slider
+st.session_state["min_len_val"] = min_word_len
+st.session_state["anomaly_th_val"] = anomaly_threshold
+
+# 4. Inject the Reset Button block to restore defaults and trigger a clean rerun
+if st.sidebar.button("🔄 Reset Parameters to Default", use_container_width=True):
+    st.session_state["max_df_val"] = 0.85
+    st.session_state["min_len_val"] = 3
+    st.session_state["anomaly_th_val"] = 52.10
+    st.rerun()
 
 st.sidebar.divider()
 
@@ -46,20 +96,18 @@ st.sidebar.markdown(
         <h2 style="margin: 0; padding: 2px 0; color: #1f77b4; font-size: 26px; font-weight: 800;">{release_date_str}</h2>
         <span style="font-size: 14px; color: #333333; font-weight: 600;">⏳ {days_remaining} Days Remaining</span>
     </div>
-    """, 
-    unsafe_allow_html=True
+    """, unsafe_allow_html=True
 )
 
-# Tightened structural padding break (cut in half to prevent scrolling)
 st.sidebar.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
 
+# RE-INJECTED SYSTEM CONTEXT NOTES
 st.sidebar.markdown(
     "**System Context:**\n"
     "• IDE Workspace: Terminal Core\n"
     "• Server Runtime: Streamlit Local Laboratory\n"
     "• Database Ledger: `fomc_cleaned_data.json`"
 )
-
 
 # --- 4. MAIN DASHBOARD CONTENT HEADERS ---
 st.title("📑 Unsupervised Language Analytics Engine")
