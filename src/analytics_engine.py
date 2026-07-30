@@ -62,15 +62,18 @@ def get_countdown_metrics():
         try:
             meeting_date = datetime.strptime(date_str, "%Y%m%d").date()
             
-            # Compare using our locked global UTC day boundary
-            if meeting_date >= today_utc:
-                # The Fed releases historical text minutes exactly 21 days post-meeting
-                release_date = meeting_date + timedelta(days=21)
+            # 1. Calculate when these minutes are officially scheduled to release
+            release_date = meeting_date + timedelta(days=21)
+            
+            # 2. Check if the release date is today or in the future
+            if release_date >= today_utc:
                 days_remaining = (release_date - today_utc).days
                 target_release_str = release_date.strftime("%b %d, %Y")
                 break
+                
         except ValueError:
             continue
+
             
     return target_release_str, days_remaining
 
