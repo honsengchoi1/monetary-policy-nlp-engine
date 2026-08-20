@@ -45,13 +45,15 @@ def get_countdown_metrics():
     envelope = load_local_envelope()
     upcoming_schedule = envelope.get("fomc_schedule_upcoming", [])
     
-    # 1. Enforce strict UTC synchronization for today's operational datetime
+    # --- ENTERPRISE PATCH: ENFORCE STRICT EASTERN TIME (ET) ---
+    # Shift UTC time backwards by 4 hours to simulate US Eastern Time.
+    # This prevents the UI countdown from rolling over to "0 days" at 8:00 PM ET.
     now_utc = datetime.now(timezone.utc)
-    today_utc = now_utc.date()
+    now_et = now_utc - timedelta(hours=4) 
+    today_active_date = now_et.date()
     
     # 2. EXPIRATION-PROOF FALLBACK: Calculate a target exactly 3 weeks from today
-    # This prevents the dashboard from ever displaying negative numbers or crashing.
-    dynamic_fallback_date = today_utc + timedelta(days=21)
+    dynamic_fallback_date = today_active_date + timedelta(days=21)
     days_remaining = 21
     target_release_str = dynamic_fallback_date.strftime("%b %d, %Y")
     
@@ -61,19 +63,16 @@ def get_countdown_metrics():
     for date_str in upcoming_schedule:
         try:
             meeting_date = datetime.strptime(date_str, "%Y%m%d").date()
-            
-            # 1. Calculate when these minutes are officially scheduled to release
             release_date = meeting_date + timedelta(days=21)
             
-            # 2. Check if the release date is today or in the future
-            if release_date >= today_utc:
-                days_remaining = (release_date - today_utc).days
+            # 3. Check if the release date is today or in the future
+            if release_date >= today_active_date:
+                days_remaining = (release_date - today_active_date).days
                 target_release_str = release_date.strftime("%b %d, %Y")
                 break
                 
         except ValueError:
             continue
-
             
     return target_release_str, days_remaining
 
